@@ -4,6 +4,8 @@ import User from '../models/User';
 import Subscription from '../models/Subscription';
 import Meetup from '../models/Meetup';
 
+import Mail from '../../lib/Mail';
+
 class SubscriptionController {
   async index(req, res) {
     // lista somente as inscriçoes do usuario logado que ainda nao aconteceram
@@ -83,6 +85,17 @@ class SubscriptionController {
     const subscript = await Subscription.create({
       meetup_id: req.params.idMeet,
       user_id: user.id,
+    });
+
+    await Mail.sendMail({
+      to: `${meetUp.User.name} <${meetUp.User.email}>`,
+      subject: 'Você tem um novo inscrito',
+      template: 'subscription',
+      context: {
+        user: meetUp.User.name,
+        subName: user.name,
+        subEmail: user.email,
+      },
     });
 
     return res.json(subscript);

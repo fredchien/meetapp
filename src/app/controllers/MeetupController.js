@@ -3,11 +3,30 @@ import { Op } from 'sequelize';
 import { isBefore, startOfDay, endOfDay, parseISO } from 'date-fns';
 
 import Meetup from '../models/Meetup';
+import User from '../models/User';
 
 class MeetupController {
   async index(req, res) {
-    const listMeet = await Meetup.findAll();
-    return res.json(listMeet);
+    const where = {};
+    const page = req.query.page || 1;
+
+    if (req.query.date) {
+      const searchDate = parseISO(req.query.date);
+
+      where.date = {
+        [Op.between]: [startOfDay(searchDate), endOfDay(searchDate)],
+      };
+    }
+
+    const meetups = await Meetup.findAll({
+      where,
+      order: ['date'],
+      include: [User],
+      limit: 10,
+      offset: 10 * page - 10,
+    });
+
+    return res.json(meetups);
   }
 
   async store(req, res) {
@@ -29,7 +48,7 @@ class MeetupController {
      * Check for past dates
      */
 
-    if (isBefore(date, new Date())) {
+    if (isBefore(parseISO(date), new Date())) {
       return res.status(400).json({ error: 'Past date are not permitted' });
     }
 
